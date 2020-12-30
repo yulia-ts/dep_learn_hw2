@@ -115,3 +115,26 @@ if __name__ == "__main__":
     ## N = 3 (Mini batch size)
     # x = torch.randn(3, 3, 224, 224).to(device)
     # print(model(x).shape)
+
+
+# There are 2 1024 elements vectors as input to the terminal network
+class TerminalNet(nn.Module):
+    def __init__(self, in_channels=2, terminalnet_out=1000):
+        super(TerminalNet, self).__init__()
+        self.in_channels = in_channels
+        # Define the fully connected part
+        self.fcs = nn.Sequential(
+            nn.Linear(1024, terminalnet_out),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+            nn.Linear(terminalnet_out, terminalnet_out),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+            nn.Linear(terminalnet_out, terminalnet_out),
+            nn.Softmax(dim=terminalnet_out)
+        )
+
+    def forward(self, x):
+        u = x[:, 0]*x[:, 1]  # This should be an elementwise multiplication
+        u = self.fcs(u)
+        return u
