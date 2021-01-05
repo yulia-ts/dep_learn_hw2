@@ -32,7 +32,7 @@ class MY_VGG(nn.Module):
         self.in_channels = 3
         # Define the fully connected part of VGG
         self.classifier = nn.Sequential(
-            nn.Linear(512 * 7 * 7, 4096),
+            nn.Linear(512 * 8 * 8, 4096),
             nn.ReLU(),
             nn.Dropout(p=0.5),
             nn.Linear(4096, 4096),
@@ -40,7 +40,29 @@ class MY_VGG(nn.Module):
             nn.Dropout(p=0.5),
             nn.Linear(4096, vgg_out),
         )
-        for x in vgg_type:  # Architecture is my chosen net list
+        ##VGG16
+        self.conv1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv1_2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+
+        self.conv2_1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.conv2_2 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
+
+        self.conv3_1 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
+        self.conv3_2 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+        self.conv3_3 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+
+        self.conv4_1 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
+        self.conv4_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv4_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+
+        self.conv5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+
+        # max pooling (kernel_size, stride)
+        self.pool = nn.MaxPool2d(2, 2)
+
+        """for x in vgg_type:  # Architecture is my chosen net list
             if type(x) == int:
                 out_channels = x
                 # Batchnorm and relu are not a part of the original VGG
@@ -48,11 +70,37 @@ class MY_VGG(nn.Module):
                                  padding=(1, 1), ), nn.BatchNorm2d(x), nn.ReLU(), ]
                 in_channels = x
             elif x == "M":
-                self.layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))]
+                self.layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))]"""
+
     def forward(self, x, training=True):
-        x = self.layers(x)
-        x = x.reshape(x.shape[0], -1)
-        #x = x.view(x.size(0), -1)
+        vgg_layers = nn.Sequential(*self.layers)
+        #x = vgg_layers(x).to('cuda')
+        ##
+        #print(x.size())
+        x = F.relu(self.conv1_1(x))
+        x = F.relu(self.conv1_2(x))
+        #print(x.size())
+        x = self.pool(x)
+        #print("first pool")
+        #print(x.size())
+        x = F.relu(self.conv2_1(x))
+        x = F.relu(self.conv2_2(x))
+        x = self.pool(x)
+        x = F.relu(self.conv3_1(x))
+        x = F.relu(self.conv3_2(x))
+        x = F.relu(self.conv3_3(x))
+        x = self.pool(x)
+        x = F.relu(self.conv4_1(x))
+        x = F.relu(self.conv4_2(x))
+        x = F.relu(self.conv4_3(x))
+        x = self.pool(x)
+        #print(x.size())
+        x = F.relu(self.conv5_1(x))
+        x = F.relu(self.conv5_2(x))
+        x = F.relu(self.conv5_3(x))
+        x = self.pool(x)
+        #print(x.size())
+        x = x.view(-1, 8 * 8 * 512)
         x = self.classifier(x)
         return x
 
@@ -67,9 +115,10 @@ class VQANET_Encoder(nn.Module):
         """Get image feature vector .
         """
         with torch.no_grad():
-            img_feature = self.vgg_model(image)  # [batch_size, embed_size]
+            img_feature = self.vgg_model(image).to('cuda')  # [batch_size, embed_size]
 
-        l2_norm = img_feature.norm(p=2, dim=1, keepdim=True).detach()
+        #l2_norm = img_feature.norm(p=2, dim=1, keepdim=True).detach()
+        l2_norm = img_feature.norm(p=2, dim=1, keepdim=True)
         img_feature = img_feature.div(l2_norm)  # l2-normalized feature vector
 
         return img_feature
@@ -112,7 +161,8 @@ class VQA_NET(nn.Module):
         self.fc2 = nn.Linear(ans_voc_size, ans_voc_size)
 
     def forward(self, img, question):
-
+        #print("img size")
+        #print(img.size())
         image_f = self.image_encoder(img)                     # [batch_size, embed_size]
         question_f = self.question_encoder(question)                     # [batch_size, embed_size]
         comb_feature = torch.mul(image_f, question_f)  # [batch_size, embed_size]

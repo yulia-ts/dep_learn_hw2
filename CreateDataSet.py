@@ -13,19 +13,31 @@ from PIL import Image
 
 batch_size = 50
 learning_rate = 0.1
-n_answers = 1000
+n_answers = 2410 # 1000
 max_questions_len = 26 #30
-num_classes = 10
+#num_classes = 10
 
 
 data_path = "./cache"
 save_path = "./processed"
 
-
+def get_answers_matrix(ans_voc_size,labels, scores):
+    ## updates weights according to scores
+    #print(labels)
+    #print(scores)
+    ans_hot_vec = torch.zeros(ans_voc_size, dtype=torch.long)
+    for i,v in enumerate(labels):
+        ans_hot_vec[v] = scores[i]
+        #print(ans_hot_vec[v])
+    #print(ans_hot_vec.size())
+    #print(ans_hot_vec)
+    #print("ans done")
+    return ans_hot_vec
 
 class VQADataset(Dataset):
     def __init__(self, input_f_type, max_q_len = max_questions_len , transform = None):
         print("Creating data set")
+
         # Set variables
         self.transform = transforms.Compose([transforms.ToTensor(),  # converting to (C,H,W) and [0,1]
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))  # mean=0; std=1
@@ -69,13 +81,17 @@ class VQADataset(Dataset):
             'labels': q['labels'],
             'scores': q['scores']
         }
-
-        entry['answer_label'] = target_dict[question_id]['labels']
-        entry['answer_scores'] = target_dict[question_id]['scores']
-
+        answers_matrix = get_answers_matrix(self.ans_voc_size,target_dict[question_id]['labels'], target_dict[question_id]['scores'])
+        np_ans_lables = target_dict[question_id]['labels']
+        if not np_ans_lables:
+            entry['answer_label'] = np.random.choice(np_ans_lables)
+        else:
+            np_ans_lables =[1]
+            entry['answer_label'] = np.random.choice(np_ans_lables)
+        #entry['answer_scores'] = target_dict[question_id]['scores']
+        entry['answer_mat'] = answers_matrix
         if transform:
             entry['image'] = transform(entry['image'])
-        #print(entry)
         return entry
 
     def __len__(self):

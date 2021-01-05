@@ -9,11 +9,13 @@ from CreateDataSet import data_load
 from vqa_model import VQA_NET
 
 
+
 ### Hyper Parameters
 num_epochs = 2
 batch_size = 50
 learning_rate = 0.1
 n_answers = 1000
+num_all_pred_answer = 2410
 max_questions_len = 26 #30
 num_classes = 10
 num_layers = 2
@@ -22,17 +24,11 @@ data_path = "./cache"
 save_path = "./processed"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-### Function receiving as  an input true labels, scores and number of possible answers, and returning a sparse matrix
-def to_categorical(y, num_classes):
-    return torch.zeros(num_classes)[y]
 
-def count_soft_acc(pred_exp, label, answer_scores):
-    if pred_exp in label:
-        for index,val in label:
-            if pred_exp == label[index]:
-                return answer_scores[index]
-    else:
-        return 0
+
+def count_soft_acc(pred_exp, label_vec):
+    pr_ex = torch.eye(num_all_pred_answer)[pred_exp].to('cuda')
+    return torch.matmul(pr_ex.float(), label_vec.float().t())
 
 def main():
     data_loader = data_load(
@@ -76,24 +72,27 @@ def main():
             for batch_idx, batch_sample in enumerate(data_loader[phase]):
                 image = batch_sample['image'].to(device)
                 question = batch_sample['question'].to(device)
-                label = batch_sample['answer_label']
-                answer_scores = batch_sample['answer_scores']  # not tensor, list.
-
-                print(image.shape())
-                print(question.shape())
+                label = batch_sample['answer_label'].to(device)
+                #answer_scores = batch_sample['answer_scores']  # not tensor, list.
+                label_vec = batch_sample['answer_mat'].to(device)
+                #print(image.size())
+                #print(question.size())
                 optimizer.zero_grad()
                 with torch.set_grad_enabled(phase == 'train'):
-
+                    #print(label)
+                    #print(type(label))
+                    #print(label.size())
                     output = model(image, question)  # [batch_size, ans_vocab_size=1000]
                     _, pred_exp = torch.max(output, 1)  # [batch_size]
+                    #print(pred_exp)
+                    #loss = loss_function(output, label_vec)
                     loss = loss_function(output, label)
-
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
                 # unk asnwer is not accepted by our model
                 running_loss += loss.item()
-                running_accuracy += count_soft_acc(pred_exp, label, answer_scores)
+                running_accuracy += count_soft_acc(pred_exp, label_vec)
                 # Print the average loss in a mini-batch.
                 if batch_idx % 10 == 0:
                     print('| {} SET | Epoch [{:02d}/{:02d}], Step [{:04d}/{:04d}], Loss: {:.4f}'
