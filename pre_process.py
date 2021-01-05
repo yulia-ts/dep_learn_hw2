@@ -14,62 +14,63 @@ import json
 import numpy as np
 import re
 import pickle
-#from CreateDataSet import VQADataset
+
+# from CreateDataSet import VQADataset
 
 ##preprocessing the answers given functions
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-#from dataset import Dictionary
-#import utils
+# from dataset import Dictionary
+# import utils
 
 
 contractions = {
     "aint": "ain't", "arent": "aren't", "cant": "can't", "couldve":
-    "could've", "couldnt": "couldn't", "couldn'tve": "couldn't've",
+        "could've", "couldnt": "couldn't", "couldn'tve": "couldn't've",
     "couldnt've": "couldn't've", "didnt": "didn't", "doesnt":
-    "doesn't", "dont": "don't", "hadnt": "hadn't", "hadnt've":
-    "hadn't've", "hadn'tve": "hadn't've", "hasnt": "hasn't", "havent":
-    "haven't", "hed": "he'd", "hed've": "he'd've", "he'dve":
-    "he'd've", "hes": "he's", "howd": "how'd", "howll": "how'll",
+        "doesn't", "dont": "don't", "hadnt": "hadn't", "hadnt've":
+        "hadn't've", "hadn'tve": "hadn't've", "hasnt": "hasn't", "havent":
+        "haven't", "hed": "he'd", "hed've": "he'd've", "he'dve":
+        "he'd've", "hes": "he's", "howd": "how'd", "howll": "how'll",
     "hows": "how's", "Id've": "I'd've", "I'dve": "I'd've", "Im":
-    "I'm", "Ive": "I've", "isnt": "isn't", "itd": "it'd", "itd've":
-    "it'd've", "it'dve": "it'd've", "itll": "it'll", "let's": "let's",
+        "I'm", "Ive": "I've", "isnt": "isn't", "itd": "it'd", "itd've":
+        "it'd've", "it'dve": "it'd've", "itll": "it'll", "let's": "let's",
     "maam": "ma'am", "mightnt": "mightn't", "mightnt've":
-    "mightn't've", "mightn'tve": "mightn't've", "mightve": "might've",
+        "mightn't've", "mightn'tve": "mightn't've", "mightve": "might've",
     "mustnt": "mustn't", "mustve": "must've", "neednt": "needn't",
     "notve": "not've", "oclock": "o'clock", "oughtnt": "oughtn't",
     "ow's'at": "'ow's'at", "'ows'at": "'ow's'at", "'ow'sat":
-    "'ow's'at", "shant": "shan't", "shed've": "she'd've", "she'dve":
-    "she'd've", "she's": "she's", "shouldve": "should've", "shouldnt":
-    "shouldn't", "shouldnt've": "shouldn't've", "shouldn'tve":
-    "shouldn't've", "somebody'd": "somebodyd", "somebodyd've":
-    "somebody'd've", "somebody'dve": "somebody'd've", "somebodyll":
-    "somebody'll", "somebodys": "somebody's", "someoned": "someone'd",
+        "'ow's'at", "shant": "shan't", "shed've": "she'd've", "she'dve":
+        "she'd've", "she's": "she's", "shouldve": "should've", "shouldnt":
+        "shouldn't", "shouldnt've": "shouldn't've", "shouldn'tve":
+        "shouldn't've", "somebody'd": "somebodyd", "somebodyd've":
+        "somebody'd've", "somebody'dve": "somebody'd've", "somebodyll":
+        "somebody'll", "somebodys": "somebody's", "someoned": "someone'd",
     "someoned've": "someone'd've", "someone'dve": "someone'd've",
     "someonell": "someone'll", "someones": "someone's", "somethingd":
-    "something'd", "somethingd've": "something'd've", "something'dve":
-    "something'd've", "somethingll": "something'll", "thats":
-    "that's", "thered": "there'd", "thered've": "there'd've",
+        "something'd", "somethingd've": "something'd've", "something'dve":
+        "something'd've", "somethingll": "something'll", "thats":
+        "that's", "thered": "there'd", "thered've": "there'd've",
     "there'dve": "there'd've", "therere": "there're", "theres":
-    "there's", "theyd": "they'd", "theyd've": "they'd've", "they'dve":
-    "they'd've", "theyll": "they'll", "theyre": "they're", "theyve":
-    "they've", "twas": "'twas", "wasnt": "wasn't", "wed've":
-    "we'd've", "we'dve": "we'd've", "weve": "we've", "werent":
-    "weren't", "whatll": "what'll", "whatre": "what're", "whats":
-    "what's", "whatve": "what've", "whens": "when's", "whered":
-    "where'd", "wheres": "where's", "whereve": "where've", "whod":
-    "who'd", "whod've": "who'd've", "who'dve": "who'd've", "wholl":
-    "who'll", "whos": "who's", "whove": "who've", "whyll": "why'll",
+        "there's", "theyd": "they'd", "theyd've": "they'd've", "they'dve":
+        "they'd've", "theyll": "they'll", "theyre": "they're", "theyve":
+        "they've", "twas": "'twas", "wasnt": "wasn't", "wed've":
+        "we'd've", "we'dve": "we'd've", "weve": "we've", "werent":
+        "weren't", "whatll": "what'll", "whatre": "what're", "whats":
+        "what's", "whatve": "what've", "whens": "when's", "whered":
+        "where'd", "wheres": "where's", "whereve": "where've", "whod":
+        "who'd", "whod've": "who'd've", "who'dve": "who'd've", "wholl":
+        "who'll", "whos": "who's", "whove": "who've", "whyll": "why'll",
     "whyre": "why're", "whys": "why's", "wont": "won't", "wouldve":
-    "would've", "wouldnt": "wouldn't", "wouldnt've": "wouldn't've",
+        "would've", "wouldnt": "wouldn't", "wouldnt've": "wouldn't've",
     "wouldn'tve": "wouldn't've", "yall": "y'all", "yall'll":
-    "y'all'll", "y'allll": "y'all'll", "yall'd've": "y'all'd've",
+        "y'all'll", "y'allll": "y'all'll", "yall'd've": "y'all'd've",
     "y'alld've": "y'all'd've", "y'all'dve": "y'all'd've", "youd":
-    "you'd", "youd've": "you'd've", "you'dve": "you'd've", "youll":
-    "you'll", "youre": "you're", "youve": "you've"
+        "you'd", "youd've": "you'd've", "you'dve": "you'd've", "youll":
+        "you'll", "youre": "you're", "youve": "you've"
 }
 
-manual_map = { 'none': '0',
+manual_map = {'none': '0',
               'zero': '0',
               'one': '1',
               'two': '2',
@@ -79,14 +80,14 @@ manual_map = { 'none': '0',
               'six': '6',
               'seven': '7',
               'eight': '8',
-               'nine': '9',
+              'nine': '9',
               'ten': '10'}
 articles = ['a', 'an', 'the']
 period_strip = re.compile("(?!<=\d)(\.)(?!\d)")
 comma_strip = re.compile("(\d)(\,)(\d)")
 punct = [';', r"/", '[', ']', '"', '{', '}',
-                '(', ')', '=', '+', '\\', '_', '-',
-                '>', '<', '@', '`', ',', '?', '!']
+         '(', ')', '=', '+', '\\', '_', '-',
+         '>', '<', '@', '`', ',', '?', '!']
 
 
 def get_score(occurences):
@@ -106,7 +107,7 @@ def process_punctuation(inText):
     outText = inText
     for p in punct:
         if (p + ' ' in inText or ' ' + p in inText) \
-           or (re.search(comma_strip, inText) != None):
+                or (re.search(comma_strip, inText) != None):
             outText = outText.replace(p, '')
         else:
             outText = outText.replace(p, ' ')
@@ -177,11 +178,11 @@ def create_ans2label(occurence, name, cache_root):
         label2ans.append(answer)
         ans2label[answer] = label
         label += 1
-    #os.mkdir(cache_root)
-    cache_file = os.path.join(cache_root, name+'_ans2label.pkl')
+    # os.mkdir(cache_root)
+    cache_file = os.path.join(cache_root, name + '_ans2label.pkl')
 
     pickle.dump(ans2label, open(cache_file, 'wb'))
-    cache_file = os.path.join(cache_root, name+'_label2ans.pkl')
+    cache_file = os.path.join(cache_root, name + '_label2ans.pkl')
     pickle.dump(label2ans, open(cache_file, 'wb'))
     return ans2label
 
@@ -223,10 +224,10 @@ def compute_target(answers_dset, ans2label, name, cache_root):
             'scores': scores
         })
 
-    #os.mkdir(cache_root)
-    cache_file = os.path.join(cache_root, name+'_target.pkl')
+    # os.mkdir(cache_root)
+    cache_file = os.path.join(cache_root, name + '_target.pkl')
     with open(cache_file, 'wb') as f:
-      pickle.dump(target, f)
+        pickle.dump(target, f)
     return target
 
 
@@ -241,6 +242,10 @@ def get_question(qid, questions):
         if question['question_id'] == qid:
             return question
 
+def get_ans(q_answers, val_ans_set):
+    all_answers = [answer["answer"] for answer in q_answers]
+    val_ans_set = [a for a in all_answers if a in val_ans_set]
+    return all_answers, val_ans_set
 
 def load_v2():
     train_answer_file = '/datashare/v2_mscoco_train2014_annotations.json'
@@ -256,17 +261,121 @@ def load_v2():
     compute_target(val_answers, ans2label, 'val', "cache")
 
 
+def load_q(question_file_train, question_file_val):
+    ##making vocab dict for both val and train questions, will save them to pickel file
+    cache_root = "cache"
+    voc_set_train = set()
+    q_len_train = []
+    """Make dictionary for questions and save them into text file."""
+    # train
+    with open(question_file_train) as f:
+        questions_train = json.load(f)['questions']
+    set_q_len_train = [None] * len(questions_train)
+    for iquestion, question in enumerate(questions_train):
+        words_train = re.compile(r'(\W+)').split(question['question'].lower())
+        words_train = [w.strip() for w in words_train if len(w.strip()) > 0]
+        voc_set_train.update(words_train)
+        set_q_len_train[iquestion] = len(words_train)
+    q_len_train += set_q_len_train
+
+    voc_l_train = list(voc_set_train)
+    voc_l_train.sort()
+    voc_l_train.insert(0, '<pad>')
+    voc_l_train.insert(1, '<unk>')
+
+    train_q_cache_file = os.path.join(cache_root, 'train_questions.txt')
+    with open(train_q_cache_file, 'w') as f:
+        f.writelines([w + '\n' for w in voc_l_train])
+
+    print('Train vocabulary for questions')
+    print('Num total words: %d' % len(voc_set_train))
+    print('Max len of  train question: %d' % np.max(q_len_train))
+    # val
+    voc_set_val = set()
+    q_len_val = []
+    with open(question_file_val) as f:
+        questions_val = json.load(f)['questions']
+    set_q_len_val = [None] * len(questions_val)
+    for iquestion, question in enumerate(questions_val):
+        words_val = re.compile(r'(\W+)').split(question['question'].lower())
+        words_val = [w.strip() for w in words_val if len(w.strip()) > 0]
+        voc_set_val.update(words_val)
+        set_q_len_val[iquestion] = len(words_val)
+    q_len_val += set_q_len_val
+
+    voc_l_val = list(voc_set_val)
+    voc_l_val.sort()
+    voc_l_val.insert(0, '<pad>')
+    voc_l_val.insert(1, '<unk>')
+
+    val_q_cache_file = os.path.join(cache_root, 'val_questions.txt')
+    with open(val_q_cache_file, 'w') as f:
+        f.writelines([w + '\n' for w in voc_l_val])
+
+    print('Val vocabulary for questions')
+    print('Num total words: %d' % len(voc_set_val))
+    print('Max len of  train question: %d' % np.max(q_len_val))
+
+
+def pre_process(img_dir, question_file, annotation_file, answers_valid, checked_set):
+    print('preparing to build the dataset for this exercise')
+    with open(annotation_file) as f:
+        annotations = json.load(f)['annotations']
+        qid_to_an_dict = {ans['question_id']: ans for ans in annotations}
+    #print("print qid_to_an_dict")
+    #print(qid_to_an_dict)
+
+    with open(question_file) as f:
+        questions = json.load(f)['questions']
+    print("len_question")
+    print(len(questions))
+    img_name_convention = 'COCO_' + checked_set + '_%012d'
+    vqa_dataset = [None] * len(questions)
+    unk_a_count = 0
+
+    for n_q, q in enumerate(questions):
+        if (n_q + 1) % 10000 == 0:
+            print('processing %d / %d' % (n_q + 1, len(questions)))
+        img_id = q['image_id']
+        question_id = q['question_id']
+        image_name = img_name_convention % img_id
+        image_path = os.path.join(img_dir, image_name + '.jpg')
+        question_str = q['question']
+
+        question_t = re.compile(r'(\W+)').split(question_str.lower())
+        question_t = [t.strip() for t in question_t if len(t.strip()) > 0]
+
+        im_entry = dict(img_name=image_name,
+                      img_path=image_path,
+                      question_id=question_id,
+                      question_sen=question_str,
+                      question_labels=question_t)
+
+
+        ann = qid_to_an_dict[question_id]
+        all_answers, valid_answers = get_ans(ann['answers'], answers_valid)
+
+
+        if len(valid_answers) == 0:
+            valid_answers = ['<unk>']
+            unk_a_count += 1
+        im_entry['all_answers'] = all_answers
+        im_entry['valid_answers'] = valid_answers
+
+        vqa_dataset[n_q] = im_entry
+    print('total %d out of %d answers are <unk>' % (unk_a_count, len(questions)))
+    return vqa_dataset
+
 
 if __name__ == '__main__':
-
     ##starting with preprocessing of data, it should be made once, for creating txt and pickle files to be used by the model
     ##data files locations +outputdir:
     image_dir_train = "/datashare/train2014"
     image_dir_val = "/datashare/val2014"
     annotation_file_train = "/datashare/v2_mscoco_train2014_annotations.json"
     question_file_train = "/datashare/v2_OpenEnded_mscoco_train2014_questions.json"
-    annotation_file_val = "/datashare/v2_OpenEnded_mscoco_val2014_questions.json"
-    question_file_val = "/datashare/v2_mscoco_val2014_annotations.json"
+    question_file_val = "/datashare/v2_OpenEnded_mscoco_val2014_questions.json"
+    annotation_file_val = "/datashare/v2_mscoco_val2014_annotations.json"
     output_dir_train = "./processed/train"
     output_dir_val = "./processed/val"
     """
@@ -335,26 +444,21 @@ if __name__ == '__main__':
         if (iimage + 1) % 1000 == 0:
             print("[{}/{}] VAL: Resized and saved the images '{}'.".format(iimage + 1, num_val_images, output_dir_val))"""
 
+    # preprocessing answers(using given script) both val and training:
+    # load_v2()
 
-    ##make vocabulary
+    # preprocessing questions - creating vocab:
+    # load_q(question_file_train, question_file_val)
+    answers_valid = "./cache/trainval_label2ans.pkl"
+    train = pre_process(output_dir_train, question_file_train, annotation_file_train, answers_valid, 'train2014')
+    validation = pre_process(output_dir_val, question_file_val, annotation_file_val, answers_valid, 'val2014')
 
-    #preprocessing answers(using given script):
-    load_v2()
-
-    #preprocessing questions:
-
-    #preprocessing val set
-
-
+    np.save('./cache/train.npy', np.array(train))
+    np.save('./cache/validation.npy', np.array(validation))
 
     ##train
 
-    ##validation
-
-
-
-
-
+    """
     # Load dataset
     train_dataset = VQADataset(path=cfg['main']['paths']['train'])
     val_dataset = VQADataset(path=cfg['main']['paths']['validation'])
@@ -362,5 +466,4 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_dataset, cfg['train']['batch_size'], shuffle=True,
                               num_workers=cfg['main']['num_workers'])
     eval_loader = DataLoader(val_dataset, cfg['train']['batch_size'], shuffle=True,
-                             num_workers=cfg['main']['num_workers'])
-
+                             num_workers=cfg['main']['num_workers'])"""
