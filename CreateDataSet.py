@@ -11,7 +11,6 @@ from PIL import Image
  class preparing preparing VQA dataset"""
 ### Hyper Parameters
 
-num_epochs = 2
 batch_size = 50
 learning_rate = 0.1
 n_answers = 1000
@@ -28,7 +27,7 @@ class VQADataset(Dataset):
     def __init__(self, input_f_type, max_q_len = max_questions_len , transform = None):
         print("Creating data set")
         # Set variables
-        self.transform = transforms.Compose([transforms.ToTensor(),  # convert to (C,H,W) and [0,1]
+        self.transform = transforms.Compose([transforms.ToTensor(),  # converting to (C,H,W) and [0,1]
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))  # mean=0; std=1
         ])
         self.vqa = np.load('cache'+'/'+input_f_type+'.npy', allow_pickle=True)
@@ -45,6 +44,7 @@ class VQADataset(Dataset):
             self.target = os.path.join('cache', 'train_target.pkl')
         self.ans2label = pickle.load(open(self.ans2label_path, 'rb'))
         self.label2ans = pickle.load(open(self.label2ans_path, 'rb'))
+        self.ans_voc_size = len(self.ans2label)
         self.max_questions_len = max_q_len
         self.max_num_answers = 10 ##TODO to check this
         self.transform = transform
@@ -55,7 +55,7 @@ class VQADataset(Dataset):
         max_q_length = self.max_questions_len
         #max_num_ans = self.max_num_answers
         transform = self.transform
-        image = vqa[index]['img_path']
+        image = Image.open(vqa[index]['img_path'])
         question_id = vqa[index]['question_id']
         qst2idc = np.array([qst_vocab.word2lbl('<pad>')] * max_q_length)  # padded with '<pad>' in 'ans_vocab'
         qst2idc[:len(vqa[index]['question_labels'])] = [qst_vocab.word2lbl(w) for w in vqa[index]['question_labels']]
@@ -75,7 +75,7 @@ class VQADataset(Dataset):
 
         if transform:
             entry['image'] = transform(entry['image'])
-        print(entry)
+        #print(entry)
         return entry
 
     def __len__(self):
@@ -109,7 +109,7 @@ class QVocabCreate:
 
         return self.voc[idx]
 
-def data_load( input_vqa_train_npy,input_vqa_valid_npy, max_qst_length, max_num_ans, batch_size=batch_size):
+def data_load(input_vqa_train_npy,input_vqa_valid_npy, max_qst_length, max_num_ans, batch_size=batch_size):
     transform = {
         phase: transforms.Compose([transforms.ToTensor(),
                                    transforms.Normalize((0.485, 0.456, 0.406),
@@ -128,7 +128,7 @@ def data_load( input_vqa_train_npy,input_vqa_valid_npy, max_qst_length, max_num_
         phase: torch.utils.data.DataLoader(
             dataset=vqa_dset[phase],
             batch_size=batch_size,
-            shuffle=True)
+            shuffle=True, )
         for phase in ['train', 'validation']}
 
     return data_loader

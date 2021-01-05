@@ -23,6 +23,8 @@ VGG_types = {
 }
 
 # if image is monochromatic change in_channels to 1, vgg_out is adjusted!!!! don't forget
+
+
 class VQANET(nn.Module):
     def __init__(self, image_in_channels=3, vgg_out=1024, text_in_channels=1, terminal_in_channels=2, terminalnet_out=1000):
         super(VQANET, self).__init__()
