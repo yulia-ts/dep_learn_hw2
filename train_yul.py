@@ -13,11 +13,11 @@ from matplotlib import pyplot as plt
 
 ### Hyper Parameters
 num_epochs = 3
-batch_size = 3
+batch_size = 50
 learning_rate = 1
 #n_answers = 1000
 #num_all_pred_answer = 2410
-num_all_pred_answer = 1021
+num_all_pred_answer = 1021+1 #for unknown answer
 max_questions_len = 26 #30
 num_classes = 10
 num_layers = 2
@@ -34,7 +34,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     pr_ex = torch.diagonal(pr_ex, 0)
     return pr_ex.sum()"""
 
-def count_soft_acc(pred_exp, label_vec):
+def count_soft_acc(pred_exp, label_vec, labels):
     acc = 0.000
     for i,v in enumerate(pred_exp):
         acc += label_vec[i][v]
@@ -91,6 +91,7 @@ def main():
                 label = batch_sample['answer_label'].to(device)
                 label_vec = batch_sample['answer_mat'].to(device)
                 labels = batch_sample['answer_labels']
+                scores = batch_sample['answer_scores']
                 #print(image.size())
                 #print(question.size())
                 optimizer.zero_grad()
@@ -108,18 +109,18 @@ def main():
                         optimizer.step()
                 # unk asnwer is not accepted by our model
                 running_loss += loss.item()
-                print("predicted:")
-                print(pred_exp)
-                print("true")
-                print(labels)
-                acc_step = count_soft_acc(pred_exp,label_vec)
+                #print("predicted:")
+                #print(pred_exp)
+                #print("true")
+                #print(labels)
+                acc_step = count_soft_acc(pred_exp,label_vec,label)
                 #acc_step = count_soft_acc(pred_exp.detach(), labels , answer_scores)
                 running_accuracy += acc_step
                 # Print the average loss in a mini-batch.
                 if batch_idx % 10 == 0:
                     print('| {} SET | Epoch [{:02d}/{:02d}], Step [{:04d}/{:04d}], Loss: {:.4f}, Accuracy: {:.4f}, '
                           .format(phase.upper(), epoch + 1, num_epochs, batch_idx, int(batch_step_size),
-                                  loss.item(), acc_step.sum()))
+                                  loss.item(), acc_step))
         scheduler.step()
         # Print the average loss and accuracy in an epoch.
         print("epoch time minutes")

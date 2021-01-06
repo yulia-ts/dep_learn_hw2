@@ -14,7 +14,7 @@ from PIL import Image
 batch_size = 50
 learning_rate = 0.1
 #n_answers = 2410 # 1000
-n_answers = 1021
+n_answers = 1021+1 #1 for unk
 max_questions_len = 26 #30
 #num_classes = 10
 
@@ -24,15 +24,10 @@ save_path = "./processed"
 
 def get_answers_matrix(ans_voc_size,labels, scores):
     ## updates weights according to scores
-    #print(labels)
-    #print(scores)
-    ans_hot_vec = torch.zeros(ans_voc_size, dtype=torch.long)
+    ans_hot_vec = torch.zeros(ans_voc_size, dtype=torch.float)
     for i,v in enumerate(labels):
-        ans_hot_vec[v] = scores[i]
-        #print(ans_hot_vec[v])
-    #print(ans_hot_vec.size())
-    #print(ans_hot_vec)
-    #print("ans done")
+        score = scores[i]
+        ans_hot_vec[v] = score
     return ans_hot_vec
 
 class VQADataset(Dataset):
@@ -43,32 +38,33 @@ class VQADataset(Dataset):
         self.transform = transforms.Compose([transforms.ToTensor(),  # converting to (C,H,W) and [0,1]
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))  # mean=0; std=1
         ])
-        self.vqa = np.load('cache'+'/'+input_f_type+'_27.npy', allow_pickle=True)
+        self.vqa = np.load('cache'+'/'+input_f_type+'.npy', allow_pickle=True)
         if input_f_type == 'validation':
             self.question_vocab_path = 'val_questions.txt'
         else:
             self.question_vocab_path = 'train_questions.txt'
         self.que_voc = QVocabCreate('cache'+'/'+self.question_vocab_path)
-        self.ans2label_path = os.path.join('cache', 'trainval_ans2label_27.pkl')
-        self.label2ans_path = os.path.join('cache', 'trainval_label2ans_27.pkl')
+        self.ans2label_path = os.path.join('cache', 'trainval_ans2label_final.pkl')
+        self.label2ans_path = os.path.join('cache', 'trainval_label2ans_final.pkl')
         if input_f_type == 'validation':
-            self.target = os.path.join('cache','val_target_27.pkl')
+            self.target_f = os.path.join('cache','val_target_final.pkl')
         else:
-            self.target = os.path.join('cache', 'train_target_27.pkl')
+            self.target_f = os.path.join('cache', 'train_target_final.pkl')
         self.ans2label = pickle.load(open(self.ans2label_path, 'rb'))
         self.label2ans = pickle.load(open(self.label2ans_path, 'rb'))
-        self.ans_voc_size = len(self.ans2label)
+        self.ans_voc_size = len(self.ans2label)+1  #+1 for un
         self.max_questions_len = max_q_len
         self.max_num_answers = 10 ##TODO to check this
         self.transform = transform
         #load answer_idxes per question + scores
-        with open(self.target, 'rb') as pickle_file:
+        with open(self.target_f, 'rb') as pickle_file:
             target = pickle.load(pickle_file)
         self.target_dict = {}
         for q in target:
             self.target_dict[q['question_id']] = {
                 'labels': q['labels'],
-                'scores': q['scores']
+                'scores': q['scores'],
+                'chosen_label': q['multiple_choice_label']
 
             }
     def __getitem__(self, index):
@@ -83,18 +79,12 @@ class VQADataset(Dataset):
         qst2idc[:len(vqa[index]['question_labels'])] = [qst_vocab.word2lbl(w) for w in vqa[index]['question_labels']]
         entry = {'image': image, 'question': qst2idc}
         answers_matrix = get_answers_matrix(self.ans_voc_size, self.target_dict[question_id]['labels'], self.target_dict[question_id]['scores'])
-        if len(self.target_dict[question_id]['labels']) < 1:
-            self.target_dict[question_id]['labels'] = [1]
-            self.target_dict[question_id]['scores'] = [0]
-        entry['answer_label'] = np.random.choice(self.target_dict[question_id]['labels'])
-        """else:
-            print(target_dict)
-            np_ans_labels = (1)
-            print("kfjgjgk \n")
-            print(np_ans_labels)
-            entry['answer_label'] = np.random.choice(np_ans_labels)"""
+        entry['answer_label'] = np.array(self.target_dict[question_id]['chosen_label'])
         entry['answer_labels'] = self.target_dict[question_id]['labels']
         entry['answer_scores'] = self.target_dict[question_id]['scores']
+        if len(self.target_dict[question_id]['labels']) < 1:
+            entry['answer_labels'] = [0]
+            entry['answer_scores'] = [0]
         entry['answer_mat'] = answers_matrix
         if transform:
             entry['image'] = transform(entry['image'])

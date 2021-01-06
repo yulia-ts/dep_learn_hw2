@@ -167,15 +167,16 @@ def create_ans2label(occurence, name, cache_root):
     """
     ans2label = {}
     label2ans = []
-    label = 0
+    ##label 0 for <unk>
+    label = 1
     for answer in occurence:
         label2ans.append(answer)
         ans2label[answer] = label
         label += 1
-    cache_file = os.path.join(cache_root, name + '_ans2label_28.pkl')
+    cache_file = os.path.join(cache_root, name + '_ans2label_final.pkl')
 
     pickle.dump(ans2label, open(cache_file, 'wb'))
-    cache_file = os.path.join(cache_root, name + '_label2ans_28.pkl')
+    cache_file = os.path.join(cache_root, name + '_label2ans_final.pkl')
     pickle.dump(label2ans, open(cache_file, 'wb'))
     return ans2label
 
@@ -207,17 +208,22 @@ def compute_target(answers_dset, ans2label, name, cache_root):
         for k, v in answer_count.items():
             if k in ans2label:
                 label_counts[ans2label[k]] = v
-
+        temp_ans = ans_entry['multiple_choice_answer']
+        if temp_ans not in ans2label:
+            m_c_answe = 0
+        else:
+            m_c_answe = ans2label[temp_ans]
         target.append({
             'question_id': ans_entry['question_id'],
             'question_type': ans_entry['question_type'],
             'image_id': ans_entry['image_id'],
             'label_counts': label_counts,
+            'multiple_choice_label': m_c_answe,
             'labels': labels,
             'scores': scores
         })
 
-    cache_file = os.path.join(cache_root, name + '_target_28.pkl')
+    cache_file = os.path.join(cache_root, name + '_target_final.pkl')
     with open(cache_file, 'wb') as f:
         pickle.dump(target, f)
     return target
@@ -248,7 +254,7 @@ def load_v2():
     with open(val_answer_file) as f:
         val_answers = json.load(f)['annotations']
     #occurence = filter_answers(train_answers, 9)
-    occurence = filter_answers(train_answers, 28)
+    occurence = filter_answers(train_answers, 27)
     ans2label = create_ans2label(occurence, 'trainval', "cache")
     compute_target(train_answers, ans2label, 'train', "cache")
     compute_target(val_answers, ans2label, 'val', "cache")
@@ -310,8 +316,17 @@ def load_q(question_file_train, question_file_val):
     print('Max len of  train question: %d' % np.max(q_len_val))
 
 
-def pre_process(img_dir, question_file, annotation_file, answers_valid, checked_set):
+def pre_process(img_dir, question_file, annotation_file, answers_valid_f, checked_set):
     print('preparing to build the dataset for this exercise')
+    #open valid answers file
+    with open(answers_valid_f, 'rb') as pickle_file:
+        answers_dict2label = pickle.load(pickle_file)
+    #ans2lbl_val = {}
+    #print(checked_set)
+    """for ans in answers_dict2label:
+        print(ans)
+        ans2lbl_val[ans] = answers_dict2label[ans]"""
+
     with open(annotation_file) as f:
         annotations = json.load(f)['annotations']
         qid_to_an_dict = {ans['question_id']: ans for ans in annotations}
@@ -344,7 +359,13 @@ def pre_process(img_dir, question_file, annotation_file, answers_valid, checked_
 
 
         ann = qid_to_an_dict[question_id]
-        all_answers, valid_answers = get_ans(ann['answers'], answers_valid)
+
+        ##get all answer and only valid labels
+
+
+        #all_answers, valid_answers = get_ans(ann['answers'], answers_valid)
+        all_answers = [answer["answer"] for answer in ann['answers']]
+        valid_answers = [a for a in all_answers if a in answers_dict2label.keys()]
 
 
         if len(valid_answers) == 0:
@@ -352,6 +373,7 @@ def pre_process(img_dir, question_file, annotation_file, answers_valid, checked_
             unk_a_count += 1
         im_entry['all_answers'] = all_answers
         im_entry['valid_answers'] = valid_answers
+
 
         vqa_dataset[n_q] = im_entry
     print('total %d out of %d answers are <unk>' % (unk_a_count, len(questions)))
@@ -418,12 +440,12 @@ if __name__ == '__main__':
     load_v2()
 
     # preprocessing questions - creating vocab:
-    #load_q(question_file_train, question_file_val)
-    answers_valid = "./cache/trainval_label2ans_28.pkl"
-    train = pre_process(output_dir_train, question_file_train, annotation_file_train, answers_valid, 'train2014')
-    validation = pre_process(output_dir_val, question_file_val, annotation_file_val, answers_valid, 'val2014')
+    load_q(question_file_train, question_file_val)
+    answers_valid_file = "./cache/trainval_ans2label_final.pkl"
+    train = pre_process(output_dir_train, question_file_train, annotation_file_train, answers_valid_file, 'train2014')
+    validation = pre_process(output_dir_val, question_file_val, annotation_file_val, answers_valid_file, 'val2014')
 
-    np.save('./cache/train_28.npy', np.array(train))
-    np.save('./cache/validation_28.npy', np.array(validation))
+    np.save('./cache/train.npy', np.array(train))
+    np.save('./cache/validation.npy', np.array(validation))
 
 

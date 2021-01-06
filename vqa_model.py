@@ -168,9 +168,9 @@ class VQA_NET(nn.Module):
         comb_feature = torch.mul(image_f, question_f)  # [batch_size, embed_size]
         comb_feature = self.tanh(comb_feature)
         comb_feature = self.dropout(comb_feature)
-        comb_feature = self.fc1(comb_feature)           # [batch_size, ans_vocab_size=1000]
+        comb_feature = self.fc1(comb_feature)           # [batch_size, ans_vocab_size]
         comb_feature = self.tanh(comb_feature)
         comb_feature = self.dropout(comb_feature)
-        comb_feature = self.fc2(comb_feature)           # [batch_size, ans_vocab_size=1000]
+        comb_feature = self.fc2(comb_feature)           # [batch_size, ans_vocab_size]
 
         return comb_feature
