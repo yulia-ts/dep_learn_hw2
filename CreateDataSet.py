@@ -13,7 +13,8 @@ from PIL import Image
 
 batch_size = 50
 learning_rate = 0.1
-n_answers = 2410 # 1000
+#n_answers = 2410 # 1000
+n_answers = 1021
 max_questions_len = 26 #30
 #num_classes = 10
 
@@ -42,18 +43,18 @@ class VQADataset(Dataset):
         self.transform = transforms.Compose([transforms.ToTensor(),  # converting to (C,H,W) and [0,1]
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))  # mean=0; std=1
         ])
-        self.vqa = np.load('cache'+'/'+input_f_type+'.npy', allow_pickle=True)
+        self.vqa = np.load('cache'+'/'+input_f_type+'_27.npy', allow_pickle=True)
         if input_f_type == 'validation':
             self.question_vocab_path = 'val_questions.txt'
         else:
             self.question_vocab_path = 'train_questions.txt'
         self.que_voc = QVocabCreate('cache'+'/'+self.question_vocab_path)
-        self.ans2label_path = os.path.join('cache', 'trainval_ans2label.pkl')
-        self.label2ans_path = os.path.join('cache', 'trainval_label2ans.pkl')
+        self.ans2label_path = os.path.join('cache', 'trainval_ans2label_27.pkl')
+        self.label2ans_path = os.path.join('cache', 'trainval_label2ans_27.pkl')
         if input_f_type == 'validation':
-            self.target = os.path.join('cache','val_target.pkl')
+            self.target = os.path.join('cache','val_target_27.pkl')
         else:
-            self.target = os.path.join('cache', 'train_target.pkl')
+            self.target = os.path.join('cache', 'train_target_27.pkl')
         self.ans2label = pickle.load(open(self.ans2label_path, 'rb'))
         self.label2ans = pickle.load(open(self.label2ans_path, 'rb'))
         self.ans_voc_size = len(self.ans2label)
@@ -92,8 +93,8 @@ class VQADataset(Dataset):
             print("kfjgjgk \n")
             print(np_ans_labels)
             entry['answer_label'] = np.random.choice(np_ans_labels)"""
-        #entry['answer_labels'] = self.self.target_dict[question_id]['labels']
-        #entry['answer_scores'] = self.target_dict[question_id]['scores']
+        entry['answer_labels'] = self.target_dict[question_id]['labels']
+        entry['answer_scores'] = self.target_dict[question_id]['scores']
         entry['answer_mat'] = answers_matrix
         if transform:
             entry['image'] = transform(entry['image'])

@@ -172,10 +172,10 @@ def create_ans2label(occurence, name, cache_root):
         label2ans.append(answer)
         ans2label[answer] = label
         label += 1
-    cache_file = os.path.join(cache_root, name + '_ans2label.pkl')
+    cache_file = os.path.join(cache_root, name + '_ans2label_28.pkl')
 
     pickle.dump(ans2label, open(cache_file, 'wb'))
-    cache_file = os.path.join(cache_root, name + '_label2ans.pkl')
+    cache_file = os.path.join(cache_root, name + '_label2ans_28.pkl')
     pickle.dump(label2ans, open(cache_file, 'wb'))
     return ans2label
 
@@ -217,7 +217,7 @@ def compute_target(answers_dset, ans2label, name, cache_root):
             'scores': scores
         })
 
-    cache_file = os.path.join(cache_root, name + '_target.pkl')
+    cache_file = os.path.join(cache_root, name + '_target_28.pkl')
     with open(cache_file, 'wb') as f:
         pickle.dump(target, f)
     return target
@@ -247,7 +247,8 @@ def load_v2():
     val_answer_file = '/datashare/v2_mscoco_val2014_annotations.json'
     with open(val_answer_file) as f:
         val_answers = json.load(f)['annotations']
-    occurence = filter_answers(train_answers, 9)
+    #occurence = filter_answers(train_answers, 9)
+    occurence = filter_answers(train_answers, 28)
     ans2label = create_ans2label(occurence, 'trainval', "cache")
     compute_target(train_answers, ans2label, 'train', "cache")
     compute_target(val_answers, ans2label, 'val', "cache")
@@ -370,7 +371,7 @@ if __name__ == '__main__':
     output_dir_val = "./processed/validation"
 
     ##first we resize images from the input directory and saving it in the output one
-
+    """
     image_size = [256,256]
     ##train images
     images_train = os.listdir(image_dir_train)
@@ -412,17 +413,17 @@ if __name__ == '__main__':
             im.save(os.path.join(output_dir_val, image), im.format)
         if (iimage + 1) % 1000 == 0:
             print("[{}/{}] VAL: Resized and saved the images '{}'.".format(iimage + 1, num_val_images, output_dir_val))
-
+    """
     # preprocessing answers(using given script) both val and training:
     load_v2()
 
     # preprocessing questions - creating vocab:
-    load_q(question_file_train, question_file_val)
-    answers_valid = "./cache/trainval_label2ans.pkl"
+    #load_q(question_file_train, question_file_val)
+    answers_valid = "./cache/trainval_label2ans_28.pkl"
     train = pre_process(output_dir_train, question_file_train, annotation_file_train, answers_valid, 'train2014')
     validation = pre_process(output_dir_val, question_file_val, annotation_file_val, answers_valid, 'val2014')
 
-    np.save('./cache/train.npy', np.array(train))
-    np.save('./cache/validation.npy', np.array(validation))
+    np.save('./cache/train_28.npy', np.array(train))
+    np.save('./cache/validation_28.npy', np.array(validation))
 
 

@@ -13,10 +13,11 @@ from matplotlib import pyplot as plt
 
 ### Hyper Parameters
 num_epochs = 3
-batch_size = 100
-learning_rate = 0.1
-n_answers = 1000
-num_all_pred_answer = 2410
+batch_size = 3
+learning_rate = 1
+#n_answers = 1000
+#num_all_pred_answer = 2410
+num_all_pred_answer = 1021
 max_questions_len = 26 #30
 num_classes = 10
 num_layers = 2
@@ -27,17 +28,22 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 
-def count_soft_acc(pred_exp, label_vec):
+"""def count_soft_acc(pred_exp, label_vec):
     pr_ex = torch.eye(num_all_pred_answer)[pred_exp].to('cuda')
     pr_ex = torch.matmul(pr_ex.float(), label_vec.float().t())
     pr_ex = torch.diagonal(pr_ex, 0)
-    return pr_ex.sum()
+    return pr_ex.sum()"""
 
+def count_soft_acc(pred_exp, label_vec):
+    acc = 0.000
+    for i,v in enumerate(pred_exp):
+        acc += label_vec[i][v]
+    return acc
 
 def main():
     data_loader = data_load(
-        input_vqa_train_npy='train.npy',
-        input_vqa_valid_npy='valid.npy',
+        input_vqa_train_npy='train_27.npy',
+        input_vqa_valid_npy='valid_27.npy',
         max_qst_length= max_questions_len,
         max_num_ans = 10,
         batch_size= batch_size)
@@ -76,18 +82,15 @@ def main():
             running_accuracy = 0
             batch_step_size = len(data_loader[phase].dataset) / batch_size
             if phase == 'train':
-
                 model.train()
             else:
                 model.eval()
-
             for batch_idx, batch_sample in enumerate(data_loader[phase]):
                 image = batch_sample['image'].to(device)
                 question = batch_sample['question'].to(device)
                 label = batch_sample['answer_label'].to(device)
-                #labes = batch_sample['answer_labels']
-                #answer_scores = batch_sample['answer_scores']  # not tensor, list.
                 label_vec = batch_sample['answer_mat'].to(device)
+                labels = batch_sample['answer_labels']
                 #print(image.size())
                 #print(question.size())
                 optimizer.zero_grad()
@@ -105,10 +108,15 @@ def main():
                         optimizer.step()
                 # unk asnwer is not accepted by our model
                 running_loss += loss.item()
+                print("predicted:")
+                print(pred_exp)
+                print("true")
+                print(labels)
                 acc_step = count_soft_acc(pred_exp,label_vec)
+                #acc_step = count_soft_acc(pred_exp.detach(), labels , answer_scores)
                 running_accuracy += acc_step
                 # Print the average loss in a mini-batch.
-                if batch_idx % 1000 == 0:
+                if batch_idx % 10 == 0:
                     print('| {} SET | Epoch [{:02d}/{:02d}], Step [{:04d}/{:04d}], Loss: {:.4f}, Accuracy: {:.4f}, '
                           .format(phase.upper(), epoch + 1, num_epochs, batch_idx, int(batch_step_size),
                                   loss.item(), acc_step.sum()))
@@ -118,10 +126,6 @@ def main():
         print((time.clock() -epoch_time)/60)
         epoch_loss = running_loss / batch_step_size
         epoch_acc = running_accuracy.double() / len(data_loader[phase].dataset)
-
-
-
-
         print('| {} SET | Epoch [{:02d}/{:02d}], Loss: {:.4f}, Acc(Exp2): {:.4f} \n'
               .format(phase.upper(), epoch + 1, num_epochs, epoch_loss, epoch_acc))
         # Save loss and accuracy for train and test
