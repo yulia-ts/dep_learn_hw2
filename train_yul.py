@@ -7,12 +7,13 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from CreateDataSet import data_load
 from vqa_model import VQA_NET
-
+import time
+from matplotlib import pyplot as plt
 
 
 ### Hyper Parameters
-num_epochs = 2
-batch_size = 50
+num_epochs = 3
+batch_size = 100
 learning_rate = 0.1
 n_answers = 1000
 num_all_pred_answer = 2410
@@ -28,7 +29,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def count_soft_acc(pred_exp, label_vec):
     pr_ex = torch.eye(num_all_pred_answer)[pred_exp].to('cuda')
-    return torch.matmul(pr_ex.float(), label_vec.float().t())
+    pr_ex = torch.matmul(pr_ex.float(), label_vec.float().t())
+    pr_ex = torch.diagonal(pr_ex, 0)
+    return pr_ex.sum()
+
 
 def main():
     data_loader = data_load(
@@ -44,7 +48,14 @@ def main():
     print(q_voc_size)
     print("answers vocabulary size")
     print(ans_voc_size)
+    start_time = time.time()
+    # Loss list
+    train_loss = []
+    test_loss = []
 
+    # Error list
+    train_accuracy = []
+    test_accuracy = []
     model = VQA_NET(
         embed_size=1024,
         q_voc_size = q_voc_size,
@@ -58,13 +69,14 @@ def main():
     ##gamma - multiplicative factor of learning rate decay.
     scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     for epoch in range(num_epochs):
+        epoch_time = time.time()
         print("epoch")
         for phase in ['train', 'validation']:
             running_loss = 0.0
             running_accuracy = 0
             batch_step_size = len(data_loader[phase].dataset) / batch_size
             if phase == 'train':
-                scheduler.step()
+
                 model.train()
             else:
                 model.eval()
@@ -73,6 +85,7 @@ def main():
                 image = batch_sample['image'].to(device)
                 question = batch_sample['question'].to(device)
                 label = batch_sample['answer_label'].to(device)
+                #labes = batch_sample['answer_labels']
                 #answer_scores = batch_sample['answer_scores']  # not tensor, list.
                 label_vec = batch_sample['answer_mat'].to(device)
                 #print(image.size())
@@ -92,19 +105,77 @@ def main():
                         optimizer.step()
                 # unk asnwer is not accepted by our model
                 running_loss += loss.item()
-                running_accuracy += count_soft_acc(pred_exp, label_vec)
+                acc_step = count_soft_acc(pred_exp,label_vec)
+                running_accuracy += acc_step
                 # Print the average loss in a mini-batch.
-                if batch_idx % 10 == 0:
-                    print('| {} SET | Epoch [{:02d}/{:02d}], Step [{:04d}/{:04d}], Loss: {:.4f}'
+                if batch_idx % 1000 == 0:
+                    print('| {} SET | Epoch [{:02d}/{:02d}], Step [{:04d}/{:04d}], Loss: {:.4f}, Accuracy: {:.4f}, '
                           .format(phase.upper(), epoch + 1, num_epochs, batch_idx, int(batch_step_size),
-                                  loss.item()))
+                                  loss.item(), acc_step.sum()))
+        scheduler.step()
         # Print the average loss and accuracy in an epoch.
+        print("epoch time minutes")
+        print((time.clock() -epoch_time)/60)
         epoch_loss = running_loss / batch_step_size
         epoch_acc = running_accuracy.double() / len(data_loader[phase].dataset)
 
 
+
+
         print('| {} SET | Epoch [{:02d}/{:02d}], Loss: {:.4f}, Acc(Exp2): {:.4f} \n'
               .format(phase.upper(), epoch + 1, num_epochs, epoch_loss, epoch_acc))
+        # Save loss and accuracy for train and test
+        if phase == 'train':
+            train_loss.append(epoch_loss)
+            train_accuracy.append(epoch_acc)
+        else:
+            test_loss.append(epoch_loss)
+            test_accuracy.append(epoch_acc)
+    print("all epochs time minutes")
+    print((time.time() - start_time)/60)
 
+    ### Save the model
+    torch.save(VQA_NET, './model_hw2_1.pkl')
+
+    # Define the current figure, all functions/commands will apply to the current figure
+    ## first figure: Loss for train and test
+    plt.figure(1)
+    tr_loss = []
+    index = range(1, num_epochs + 1)
+    tr_loss.extend(
+        plt.plot(index, train_loss, color='b', linestyle='--', marker='o', markerfacecolor='b', label='train loss'))
+    tr_loss.extend(plt.plot(index, test_loss, color='green', linestyle='-.', marker='D', markerfacecolor='green',
+                            label='test loss'))
+    plt.setp(tr_loss, linewidth=2, markersize=5)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Loss vs Epochs')
+    plt.xticks(index, index)
+    # Legend Box appearance
+    plt.legend(shadow=True, fancybox=True)
+    # Auto layout design function
+    plt.tight_layout()
+
+    ## second figure: Accuracy for train and test
+    plt.figure(2)
+    error = []
+    index = range(1, num_epochs + 1)
+    # Each plot function is a specific line (scenario)
+    error.extend(
+        plt.plot(index, train_accuracy, color='b', linestyle='--', marker='o', markerfacecolor='b',
+                 label='train accuracy'))
+    error.extend(plt.plot(index, test_accuracy, color='green', linestyle='-.', marker='D', markerfacecolor='green',
+                          label='test accuracy'))
+    plt.setp(tr_loss, linewidth=2, markersize=5)
+
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.title('Accuracy  - Epochs')
+    plt.xticks(index, index)
+    # Legend Box appearance
+    plt.legend(shadow=True, fancybox=True)
+    # Auto layout design function
+    plt.tight_layout()
+    plt.show()
 if __name__ == '__main__':
     main()

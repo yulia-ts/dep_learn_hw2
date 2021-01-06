@@ -60,9 +60,18 @@ class VQADataset(Dataset):
         self.max_questions_len = max_q_len
         self.max_num_answers = 10 ##TODO to check this
         self.transform = transform
+        #load answer_idxes per question + scores
+        with open(self.target, 'rb') as pickle_file:
+            target = pickle.load(pickle_file)
+        self.target_dict = {}
+        for q in target:
+            self.target_dict[q['question_id']] = {
+                'labels': q['labels'],
+                'scores': q['scores']
+
+            }
     def __getitem__(self, index):
         vqa = self.vqa
-        target_f = self.target
         qst_vocab = self.que_voc
         max_q_length = self.max_questions_len
         #max_num_ans = self.max_num_answers
@@ -72,23 +81,19 @@ class VQADataset(Dataset):
         qst2idc = np.array([qst_vocab.word2lbl('<pad>')] * max_q_length)  # padded with '<pad>' in 'ans_vocab'
         qst2idc[:len(vqa[index]['question_labels'])] = [qst_vocab.word2lbl(w) for w in vqa[index]['question_labels']]
         entry = {'image': image, 'question': qst2idc}
-        #load answer_idxes per question + scores
-        with open(target_f, 'rb') as pickle_file:
-            target = pickle.load(pickle_file)
-        target_dict = {}
-        for q in target:
-            target_dict[q['question_id']] = {
-            'labels': q['labels'],
-            'scores': q['scores']
-        }
-        answers_matrix = get_answers_matrix(self.ans_voc_size,target_dict[question_id]['labels'], target_dict[question_id]['scores'])
-        np_ans_lables = target_dict[question_id]['labels']
-        if not np_ans_lables:
-            entry['answer_label'] = np.random.choice(np_ans_lables)
-        else:
-            np_ans_lables =[1]
-            entry['answer_label'] = np.random.choice(np_ans_lables)
-        #entry['answer_scores'] = target_dict[question_id]['scores']
+        answers_matrix = get_answers_matrix(self.ans_voc_size, self.target_dict[question_id]['labels'], self.target_dict[question_id]['scores'])
+        if len(self.target_dict[question_id]['labels']) < 1:
+            self.target_dict[question_id]['labels'] = [1]
+            self.target_dict[question_id]['scores'] = [0]
+        entry['answer_label'] = np.random.choice(self.target_dict[question_id]['labels'])
+        """else:
+            print(target_dict)
+            np_ans_labels = (1)
+            print("kfjgjgk \n")
+            print(np_ans_labels)
+            entry['answer_label'] = np.random.choice(np_ans_labels)"""
+        #entry['answer_labels'] = self.self.target_dict[question_id]['labels']
+        #entry['answer_scores'] = self.target_dict[question_id]['scores']
         entry['answer_mat'] = answers_matrix
         if transform:
             entry['image'] = transform(entry['image'])
