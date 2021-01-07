@@ -9,7 +9,7 @@ import json
 import numpy as np
 import re
 import pickle
-
+import h5py
 
 ##################### RUN it only once for saving resized RGB images, preprocessing questions and answers
 
@@ -379,6 +379,39 @@ def pre_process(img_dir, question_file, annotation_file, answers_valid_f, checke
     print('total %d out of %d answers are <unk>' % (unk_a_count, len(questions)))
     return vqa_dataset
 
+def h5proc_img():
+    #### not implimented yet
+        """
+            Saves resized images as HDF5 datsets
+            Returns
+                data.h5
+        """
+        train_img_dir= "./processed/train"
+        val_img_dir  = "./processed/validation"
+        # Set the disease type you want to look for
+        disease = "Infiltration"
+
+        # Size of data
+        NUM_IMAGES = len(images)
+        HEIGHT = 256
+        WIDTH = 256
+        CHANNELS = 3
+        SHAPE = (HEIGHT, WIDTH, CHANNELS)
+        images_train = os.listdir(image_dir_train)
+        num_train_images = len(images_train)
+        print("number of train images")
+        print(num_train_images)
+
+        # with h5py.File('data.h5', 'w') as hf:
+        #     for iimage, image in enumerate(images_train):
+        #         file_n_images = os.path.join(image_dir_train, image)
+        #         im = cv2.imread(file_n_images)
+        #         im = cv2.resize(image, image_size, interpolation = cv2.INTER_AREA)
+        #         cv2.imwrite(os.path.join(output_dir_train , image),im)
+        #         if (iimage+1) % 1000 == 0:
+        #            print("[{}/{}] Resized and saved the images '{}'.".format(iimage+1, num_train_images,output_dir_train))
+
+
 
 if __name__ == '__main__':
     ##starting with preprocessing of data, it should be made once, for creating txt and pickle files to be used by the model
@@ -437,14 +470,14 @@ if __name__ == '__main__':
             print("[{}/{}] VAL: Resized and saved the images '{}'.".format(iimage + 1, num_val_images, output_dir_val))
     """
     # preprocessing answers(using given script) both val and training:
-    load_v2()
+    #load_v2()
 
     # preprocessing questions - creating vocab:
     load_q(question_file_train, question_file_val)
     answers_valid_file = "./cache/trainval_ans2label_final.pkl"
     train = pre_process(output_dir_train, question_file_train, annotation_file_train, answers_valid_file, 'train2014')
     validation = pre_process(output_dir_val, question_file_val, annotation_file_val, answers_valid_file, 'val2014')
-
+    
     np.save('./cache/train.npy', np.array(train))
     np.save('./cache/validation.npy', np.array(validation))
 

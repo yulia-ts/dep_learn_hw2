@@ -38,7 +38,7 @@ class MY_VGG(nn.Module):
             nn.Linear(4096, 4096),
             nn.ReLU(),
             nn.Dropout(p=0.5),
-            nn.Linear(4096, vgg_out),
+            #nn.Linear(4096, vgg_out),
         )
         ##VGG16
         self.conv1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
@@ -110,15 +110,18 @@ class VQANET_Encoder(nn.Module):
         """
         super(VQANET_Encoder, self).__init__()
         self.vgg_model = MY_VGG(VGG_types["VGG16"])
+        self.fc = nn.Linear(4096, vgg_out)
 
     def forward(self, image):
         """Get image feature vector .
         """
         with torch.no_grad():
-            img_feature = self.vgg_model(image).to('cuda')  # [batch_size, embed_size]
+            #img_feature = self.vgg_model(image).to('cuda')  # [batch_size, embed_size]
+            img_feature = self.vgg_model(image)  # [batch_size, embed_size]
 
-        #l2_norm = img_feature.norm(p=2, dim=1, keepdim=True).detach()
-        l2_norm = img_feature.norm(p=2, dim=1, keepdim=True)
+        img_feature = self.fc(img_feature)  # [batch_size, embed_size]
+        #l2_norm = img_feature.norm(p=2, dim=1, keepdim=True)
+        l2_norm = img_feature.norm(p=2, dim=1, keepdim=True).detach()
         img_feature = img_feature.div(l2_norm)  # l2-normalized feature vector
 
         return img_feature

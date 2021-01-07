@@ -35,9 +35,9 @@ class VQADataset(Dataset):
         print("Creating data set")
 
         # Set variables
-        self.transform = transforms.Compose([transforms.ToTensor(),  # converting to (C,H,W) and [0,1]
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))  # mean=0; std=1
-        ])
+        #self.transform = transforms.Compose([transforms.ToTensor(),  # converting to (C,H,W) and [0,1]
+        #transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))  # mean=0; std=1
+        #])
         self.vqa = np.load('cache'+'/'+input_f_type+'.npy', allow_pickle=True)
         if input_f_type == 'validation':
             self.question_vocab_path = 'val_questions.txt'
@@ -54,7 +54,7 @@ class VQADataset(Dataset):
         self.label2ans = pickle.load(open(self.label2ans_path, 'rb'))
         self.ans_voc_size = len(self.ans2label)+1  #+1 for un
         self.max_questions_len = max_q_len
-        self.max_num_answers = 10 ##TODO to check this
+        #self.max_num_answers = 10 ##
         self.transform = transform
         #load answer_idxes per question + scores
         with open(self.target_f, 'rb') as pickle_file:
@@ -80,8 +80,8 @@ class VQADataset(Dataset):
         entry = {'image': image, 'question': qst2idc}
         answers_matrix = get_answers_matrix(self.ans_voc_size, self.target_dict[question_id]['labels'], self.target_dict[question_id]['scores'])
         entry['answer_label'] = np.array(self.target_dict[question_id]['chosen_label'])
-        entry['answer_labels'] = self.target_dict[question_id]['labels']
-        entry['answer_scores'] = self.target_dict[question_id]['scores']
+        #entry['answer_labels'] = self.target_dict[question_id]['labels']
+        #entry['answer_scores'] = self.target_dict[question_id]['scores']
         if len(self.target_dict[question_id]['labels']) < 1:
             entry['answer_labels'] = [0]
             entry['answer_scores'] = [0]
