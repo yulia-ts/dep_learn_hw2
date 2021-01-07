@@ -10,7 +10,7 @@ import time
 from matplotlib import pyplot as plt
 
 ### Hyper Parameters
-num_epochs = 2
+num_epochs = 5
 batch_size = 100
 learning_rate = 0.01
 # n_answers = 1000
@@ -102,7 +102,7 @@ def main():
                     # print(type(label))
                     # print(label.size())
                     output = model(image, question)  # [batch_size, ans_vocab_size=1000]
-                    print(output.requires_grad)
+                    #print(output.requires_grad)
                     loss = loss_function(output, label)
                     _, pred_exp = torch.max(output, 1)  # [batch_size]
                     # print(pred_exp)
@@ -120,7 +120,7 @@ def main():
                 # acc_step = count_soft_acc(pred_exp.detach(), labels , answer_scores)
                 running_accuracy += acc_step
                 # Print the average loss in a mini-batch.
-                if batch_idx % 1000 == 0:
+                if batch_idx % 400 == 0:
                     print('| {} SET | Epoch [{:02d}/{:02d}], Step [{:04d}/{:04d}], Loss: {:.4f}, Accuracy: {:.4f}, '
                           .format(phase.upper(), epoch + 1, num_epochs, batch_idx, int(batch_step_size),
                                   loss.item(), acc_step))

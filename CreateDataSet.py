@@ -82,9 +82,9 @@ class VQADataset(Dataset):
         entry['answer_label'] = np.array(self.target_dict[question_id]['chosen_label'])
         #entry['answer_labels'] = self.target_dict[question_id]['labels']
         #entry['answer_scores'] = self.target_dict[question_id]['scores']
-        if len(self.target_dict[question_id]['labels']) < 1:
-            entry['answer_labels'] = [0]
-            entry['answer_scores'] = [0]
+        #if len(self.target_dict[question_id]['labels']) < 1:
+        #    entry['answer_labels'] = [0]
+         #   entry['answer_scores'] = [0]
         entry['answer_mat'] = answers_matrix
         if transform:
             entry['image'] = transform(entry['image'])

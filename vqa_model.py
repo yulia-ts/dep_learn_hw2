@@ -15,7 +15,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Image Processing part- A VGG implementation with dropouts, batchnorm, and relu activation
 # Images need to be shaped into 256x256x3
 #this file has 4 classes: Image encoder class, questions encoder class, and final our VQA model class which uses the previous 2, and VGG model class
-
+vgg_out=1024
 VGG_types = {
     "VGG11": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
     "VGG13": [64, 64, "M", 128, 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
