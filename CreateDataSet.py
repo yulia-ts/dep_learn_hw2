@@ -17,7 +17,6 @@ max_questions_len = 26
 
 
 data_path = "./cache1"
-save_path = "./processed1"
 
 def get_answers_matrix(ans_voc_size,labels, scores):
     ## updates weights according to scores

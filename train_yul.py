@@ -21,7 +21,6 @@ num_classes = 10
 num_layers = 2
 hidden_size = 512
 data_path = "./cache1"
-save_path = "./processed1"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 """def count_soft_acc(pred_exp, label_vec):

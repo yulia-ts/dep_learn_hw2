@@ -255,14 +255,14 @@ def load_v2():
         val_answers = json.load(f)['annotations']
     #occurence = filter_answers(train_answers, 9)
     occurence = filter_answers(train_answers, 27)
-    ans2label = create_ans2label(occurence, 'trainval', "cache2")
-    compute_target(train_answers, ans2label, 'train', "cache2")
-    compute_target(val_answers, ans2label, 'val', "cache2")
+    ans2label = create_ans2label(occurence, 'trainval', "cache1")
+    compute_target(train_answers, ans2label, 'train', "cache1")
+    compute_target(val_answers, ans2label, 'val', "cache1")
 
 
 def load_q(question_file_train, question_file_val):
     ##making vocab dict for both val and train questions, will save them to pickel file
-    cache_root = "cache2"
+    cache_root = "cache1"
     voc_set_train = set()
     q_len_train = []
     """Make dictionary for questions and save them into text file."""
@@ -379,39 +379,6 @@ def pre_process(img_dir, question_file, annotation_file, answers_valid_f, checke
     print('total %d out of %d answers are <unk>' % (unk_a_count, len(questions)))
     return vqa_dataset
 
-def h5proc_img():
-    #### not implimented yet
-        """
-            Saves resized images as HDF5 datsets
-            Returns
-                data.h5
-        """
-        train_img_dir= "./processed/train"
-        val_img_dir  = "./processed/validation"
-        # Set the disease type you want to look for
-        disease = "Infiltration"
-
-        # Size of data
-        NUM_IMAGES = len(images)
-        HEIGHT = 256
-        WIDTH = 256
-        CHANNELS = 3
-        SHAPE = (HEIGHT, WIDTH, CHANNELS)
-        images_train = os.listdir(image_dir_train)
-        num_train_images = len(images_train)
-        print("number of train images")
-        print(num_train_images)
-
-        # with h5py.File('data.h5', 'w') as hf:
-        #     for iimage, image in enumerate(images_train):
-        #         file_n_images = os.path.join(image_dir_train, image)
-        #         im = cv2.imread(file_n_images)
-        #         im = cv2.resize(image, image_size, interpolation = cv2.INTER_AREA)
-        #         cv2.imwrite(os.path.join(output_dir_train , image),im)
-        #         if (iimage+1) % 1000 == 0:
-        #            print("[{}/{}] Resized and saved the images '{}'.".format(iimage+1, num_train_images,output_dir_train))
-
-
 
 if __name__ == '__main__':
     ##starting with preprocessing of data, it should be made once, for creating txt and pickle files to be used by the model
@@ -422,8 +389,8 @@ if __name__ == '__main__':
     question_file_train = "/datashare/v2_OpenEnded_mscoco_train2014_questions.json"
     question_file_val = "/datashare/v2_OpenEnded_mscoco_val2014_questions.json"
     annotation_file_val = "/datashare/v2_mscoco_val2014_annotations.json"
-    output_dir_train = "./processed/train2"
-    output_dir_val = "./processed/validation2"
+    output_dir_train = "./processed/train1"
+    output_dir_val = "./processed/validation1"
 
     ##first we resize images from the input directory and saving it in the output one
 
@@ -463,11 +430,11 @@ if __name__ == '__main__':
 
     # preprocessing questions - creating vocab:
     load_q(question_file_train, question_file_val)
-    answers_valid_file = "./cache2/trainval_ans2label_final.pkl"
+    answers_valid_file = "./cache1/trainval_ans2label_final.pkl"
     train = pre_process(output_dir_train, question_file_train, annotation_file_train, answers_valid_file, 'train2014')
     validation = pre_process(output_dir_val, question_file_val, annotation_file_val, answers_valid_file, 'val2014')
     
-    np.save('./cache2/train.npy', np.array(train))
-    np.save('./cache2/validation.npy', np.array(validation))
+    np.save('./cache1/train.npy', np.array(train))
+    np.save('./cache1/validation.npy', np.array(validation))
 
 
