@@ -8,19 +8,16 @@ from PIL import Image
 
 
 """ The purpose of this file:
- class preparing preparing VQA dataset"""
+ class preparing for  VQA dataset"""
 ### Hyper Parameters
-
-batch_size = 50
-learning_rate = 0.1
-#n_answers = 2410 # 1000
-n_answers = 1021+1 #1 for unk
-max_questions_len = 26 #30
-#num_classes = 10
+batch_size = 64
+n_answers = 1022 #1021+1 for unk
+max_questions_len = 26
 
 
-data_path = "./cache"
-save_path = "./processed"
+
+data_path = "./cache1"
+save_path = "./processed1"
 
 def get_answers_matrix(ans_voc_size,labels, scores):
     ## updates weights according to scores
@@ -31,25 +28,21 @@ def get_answers_matrix(ans_voc_size,labels, scores):
     return ans_hot_vec
 
 class VQADataset(Dataset):
-    def __init__(self, input_f_type, max_q_len = max_questions_len , transform = None):
+    def __init__(self, input_f_type, max_q_len=max_questions_len , transform = None):
         print("Creating data set")
-
         # Set variables
-        #self.transform = transforms.Compose([transforms.ToTensor(),  # converting to (C,H,W) and [0,1]
-        #transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))  # mean=0; std=1
-        #])
-        self.vqa = np.load('cache'+'/'+input_f_type+'.npy', allow_pickle=True)
+        self.vqa = np.load('cache1'+'/'+input_f_type+'.npy', allow_pickle=True)
         if input_f_type == 'validation':
             self.question_vocab_path = 'val_questions.txt'
         else:
             self.question_vocab_path = 'train_questions.txt'
-        self.que_voc = QVocabCreate('cache'+'/'+self.question_vocab_path)
-        self.ans2label_path = os.path.join('cache', 'trainval_ans2label_final.pkl')
-        self.label2ans_path = os.path.join('cache', 'trainval_label2ans_final.pkl')
+        self.que_voc = QVocabCreate('cache1'+'/'+self.question_vocab_path)
+        self.ans2label_path = os.path.join('cache1', 'trainval_ans2label_final.pkl')
+        self.label2ans_path = os.path.join('cache1', 'trainval_label2ans_final.pkl')
         if input_f_type == 'validation':
-            self.target_f = os.path.join('cache','val_target_final.pkl')
+            self.target_f = os.path.join('cache1','val_target_final.pkl')
         else:
-            self.target_f = os.path.join('cache', 'train_target_final.pkl')
+            self.target_f = os.path.join('cache1', 'train_target_final.pkl')
         self.ans2label = pickle.load(open(self.ans2label_path, 'rb'))
         self.label2ans = pickle.load(open(self.label2ans_path, 'rb'))
         self.ans_voc_size = len(self.ans2label)+1  #+1 for un
@@ -71,7 +64,6 @@ class VQADataset(Dataset):
         vqa = self.vqa
         qst_vocab = self.que_voc
         max_q_length = self.max_questions_len
-        #max_num_ans = self.max_num_answers
         transform = self.transform
         image = Image.open(vqa[index]['img_path'])
         question_id = vqa[index]['question_id']
@@ -80,7 +72,7 @@ class VQADataset(Dataset):
         entry = {'image': image, 'question': qst2idc}
         answers_matrix = get_answers_matrix(self.ans_voc_size, self.target_dict[question_id]['labels'], self.target_dict[question_id]['scores'])
         entry['answer_label'] = np.array(self.target_dict[question_id]['chosen_label'])
-        #entry['answer_labels'] = self.target_dict[question_id]['labels']
+        entry['answer_labels'] = self.target_dict[question_id]['labels']
         #entry['answer_scores'] = self.target_dict[question_id]['scores']
         #if len(self.target_dict[question_id]['labels']) < 1:
         #    entry['answer_labels'] = [0]
@@ -121,7 +113,7 @@ class QVocabCreate:
 
         return self.voc[idx]
 
-def data_load(input_vqa_train_npy,input_vqa_valid_npy, max_qst_length, max_num_ans, batch_size=batch_size):
+def data_load(batch_size=batch_size):
     transform = {
         phase: transforms.Compose([transforms.ToTensor(),
                                    transforms.Normalize((0.485, 0.456, 0.406),

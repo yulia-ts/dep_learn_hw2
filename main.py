@@ -10,26 +10,17 @@ import time
 from matplotlib import pyplot as plt
 
 ### Hyper Parameters
-num_epochs = 12
+num_epochs = 20
 batch_size = 64
 learning_rate = 0.001
-# n_answers = 1000
-# num_all_pred_answer = 2410
 num_all_pred_answer = 1021 + 1  # +1 for unknown answer
-max_questions_len = 26  # 30
+max_questions_len = 26
 num_classes = 10
 num_layers = 2
 hidden_size = 512
 data_path = "./cache1"
 save_path = "./processed1"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-"""def count_soft_acc(pred_exp, label_vec):
-    pr_ex = torch.eye(num_all_pred_answer)[pred_exp].to('cuda')
-    pr_ex = torch.matmul(pr_ex.float(), label_vec.float().t())
-    pr_ex = torch.diagonal(pr_ex, 0)
-    return pr_ex.sum()"""
-
 
 def count_soft_acc(pred_exp, label_vec):
     ##function input: predicted answer, true labels-scores matrix
@@ -42,7 +33,6 @@ def count_soft_acc(pred_exp, label_vec):
 
 def main():
     data_loader = data_load(batch_size=batch_size)
-
     q_voc_size = data_loader['train'].dataset.que_voc.voc_size
     ans_voc_size = data_loader['train'].dataset.ans_voc_size
     print("questions vocabulary size")
@@ -54,7 +44,7 @@ def main():
     train_loss = []
     test_loss = []
 
-    # Error list
+    # Score list
     train_accuracy = []
     test_accuracy = []
 
@@ -80,35 +70,26 @@ def main():
             running_loss = 0.0
             running_accuracy = 0
             batch_step_size = len(data_loader[phase].dataset) / batch_size
-            """if phase == 'train':
+            if phase == 'train':
                 scheduler.step()
                 model.train()
             else:
-                model.eval()"""
-            scheduler.step()
-            model.train()
+                model.eval()
             for batch_idx, batch_sample in enumerate(data_loader[phase]):
                 image = batch_sample['image'].to(device)
                 question = batch_sample['question'].to(device)
                 label = batch_sample['answer_label'].to(device)
                 label_vec = batch_sample['answer_mat'].to(device)
                 optimizer.zero_grad()
-                #with torch.set_grad_enabled(phase == 'train'):
-                with torch.set_grad_enabled(phase == 'train' or phase == 'validation'):
+                with torch.set_grad_enabled(phase == 'train'):
                     output = model(image, question)  # [batch_size, ans_voc_size=1022]
                     loss = loss_function(output, label)
-                    _, pred_exp = torch.max(output, 1)  # [batch_size]
-                    """if phase == 'train':
+                    _, pred_exp = torch.max(output, 1)
+                    if phase == 'train':
                         loss.backward()
-                        optimizer.step()"""
-                    loss.backward()
-                    optimizer.step()
-                # unk asnwer is not accepted by our model
+                        optimizer.step()
+                # unk answer is not accepted by our model
                 running_loss += loss.item()
-                # print("predicted:")
-                # print(pred_exp)
-                # print("true")
-                # print(labels)
                 acc_step = count_soft_acc(pred_exp, label_vec)
                 running_accuracy += acc_step
                 # Print the average loss in a mini-batch.
@@ -131,14 +112,13 @@ def main():
             else:
                 test_loss.append(epoch_loss)
                 test_accuracy.append(epoch_acc)
-        torch.save(model.state_dict(), os.path.join(data_path, f'model-epoch-dict1_128_-{epoch + 1}.pkl'))
 
     print("all epochs time minutes")
     print((time.time() - start_time) / 60)
 
     ### Save the model
-    torch.save(model, './model_hw2_128_64batch.pkl')
-    torch.save(model.state_dict(), './model_hw2_128_64batch.pkl')
+    torch.save(model, './model_hw2_128_final.pkl')
+    torch.save(model.state_dict(), './model_hw2_128_64batch_final.pkl')
     # Define the current figure, all functions/commands will apply to the current figure
     ## first figure: Loss for train and test
     plt.figure(1)
